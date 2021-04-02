@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename resource &apos;SyCtrl_v1_1/main/protocol_examples_common.h&apos; to &apos;protocol_netif.h&apos;" description="Rename resource &apos;protocol_examples_common.h&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="main/protocol_examples_common.h" name="protocol_netif.h" stamp="1588581647629" updateReferences="true"/>
+</session>

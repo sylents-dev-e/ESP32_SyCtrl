@@ -1,0 +1,5 @@
+cmake --build . -- -v
+ninja: error: build.ninja:90: unknown build rule 'C_COMPILER__master_v1.2e0.2eelf'
+build CMakeFiles/master_v1.0.elf.dir/project_elf_src.c.obj: C_COMPILER__...
+                                                            ^ near here
+Build complete (1 errors, 0 warnings): C:\Users\cleme\sylents\ESP32\master_v1.0\build

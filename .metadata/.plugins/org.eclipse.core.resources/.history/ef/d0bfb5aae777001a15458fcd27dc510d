@@ -1,0 +1,214 @@
+/*
+ * pwm.c
+ *
+ *  Created on: 24.03.2020
+ *      Author: cleme
+ *
+ */
+
+#include "pwm_driver.h"
+
+static TaskHandle_t task_handles[portNUM_PROCESSORS];
+
+
+static bool pwm_gpio_init()
+{
+    printf("initializing mcpwm gpio...\n");
+
+/*
+ * setting default
+ */
+#if MCPWM_GPIO_INIT
+    mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM0A, GPIO_PWM0_THROTTLE_OUT);
+    mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM0B, GPIO_PWM0_STEERING_OUT);
+    mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM_SYNC_0, GPIO_SYNC0_IN);
+    mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM_SYNC_1, GPIO_SYNC1_IN);
+    mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM_SYNC_2, GPIO_SYNC2_IN);
+    mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM_FAULT_1, GPIO_FAULT1_IN);
+    mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM_FAULT_2, GPIO_FAULT2_IN);
+#else
+    mcpwm_pin_config_t pin_config = {
+        .mcpwm0a_out_num = GPIO_PWM0_THROTTLE_OUT,
+		.mcpwm0b_out_num = GPIO_PWM0_STEERING_OUT,
+        .mcpwm_sync0_in_num  = GPIO_SYNC0_IN,
+        .mcpwm_sync1_in_num  = GPIO_SYNC1_IN,
+        .mcpwm_sync2_in_num  = GPIO_SYNC2_IN,
+        .mcpwm_fault1_in_num = GPIO_FAULT1_IN,
+        .mcpwm_fault2_in_num = GPIO_FAULT2_IN,
+    };
+    mcpwm_set_pin(MCPWM_UNIT_0, &pin_config);
+
+
+#endif
+    gpio_pulldown_en(GPIO_SYNC0_IN);   //Enable pull down on SYNC0  signal
+    gpio_pulldown_en(GPIO_SYNC1_IN);   //Enable pull down on SYNC1  signal
+    gpio_pulldown_en(GPIO_SYNC2_IN);   //Enable pull down on SYNC2  signal
+    gpio_pulldown_en(GPIO_FAULT1_IN);  //Enable pull down on FAULT1 signal
+    gpio_pulldown_en(GPIO_FAULT2_IN);  //Enable pull down on FAULT2 signal
+
+    mcpwm_config_t init_pwm;
+    init_pwm.frequency = 50;
+    init_pwm.cmpr_b = MODE1;
+    init_pwm.counter_mode = MCPWM_UP_COUNTER;
+    init_pwm.duty_mode = MCPWM_DUTY_MODE_0; // active HIGH
+    mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_0, &init_pwm);
+
+
+    return true;
+}
+
+
+/**
+ * @brief Configure whole MCPWM module
+ */
+bool pwm_generation(void)
+{
+    //mcpwm gpio initialization
+	configASSERT(pwm_gpio_init());
+
+	// create semaphore for UP/DOWN button
+
+    for(int i = 0; i < portNUM_PROCESSORS; i++) {
+    	xTaskCreatePinnedToCore(pwm_throttle_task, "pwm_throttle_task", 2048, NULL, (tskIDLE_PRIORITY + 2), &task_handles[i],i);
+       	xTaskCreatePinnedToCore(pwm_steering_task, "pwm_steering_task", 2048, NULL, (tskIDLE_PRIORITY + 2), &task_handles[i],i);
+    }
+
+    printf("Configuring Initial Parameters of mcpwm...\n");
+
+    return true;
+}
+
+void pwm_throttle_task(void *arg){
+
+	CHECK_ERROR_CODE(esp_task_wdt_add(NULL), ESP_OK);
+	CHECK_ERROR_CODE(esp_task_wdt_status(NULL), ESP_OK);
+
+	UpButtonSemaphore = NULL;
+	DownButtonSemaphore = NULL;
+	CountSemaphore = NULL;
+	vSemaphoreCreateBinary(UpButtonSemaphore);
+	vSemaphoreCreateBinary(DownButtonSemaphore);
+	vSemaphoreCreateBinary(CountSemaphore);
+
+
+	uint8_t mode_cnt = 0;
+	uint32_t c = 0;
+	portMUX_TYPE mutex = portMUX_INITIALIZER_UNLOCKED;
+
+
+	while(1){
+		CHECK_ERROR_CODE(esp_task_wdt_reset(), ESP_OK);
+
+//	//	 signal from UP button to increment speed; debounce delay
+//		//if( UpButtonSemaphore != NULL ){
+//			if((xSemaphoreTake(UpButtonSemaphore, portMAX_DELAY)== pdTRUE)){
+//				if(mode_cnt < 6){
+//					if( xSemaphoreTake(CountSemaphore, portMAX_DELAY) == pdTRUE ){
+//					mode_cnt++;
+//					gpio_set_level(2, 1);
+//
+//					}
+//				}
+//
+//
+//			vTaskDelay(DEBOUNCE_DELAY );
+//			//xSemaphoreTake(UpButtonSemaphore, 0);
+//			xSemaphoreGive( CountSemaphore );
+//			}
+//
+//	//	}
+//
+////		if( DownButtonSemaphore != NULL ){
+////	//	 signal from DOWN button to decrement speed; debounce delay
+//		else if(xSemaphoreTake(DownButtonSemaphore, portMAX_DELAY) == pdTRUE){
+//				if( xSemaphoreTake(CountSemaphore, portMAX_DELAY) == pdTRUE ){
+//									mode_cnt--;
+//									gpio_set_level(2, 1);
+//
+//			vTaskDelay(DEBOUNCE_DELAY );
+//			//xSemaphoreTake(DownButtonSemaphore, 0);
+//			xSemaphoreGive( CountSemaphore );
+//			}
+//		}
+//		else{
+//			gpio_set_level(2, 0);
+//		}
+
+		/portENTER_CRITICAL(&mutex);
+			//configASSERT(xQueueReceive(queue_button, &c, 1000));
+			if ( c==UP){
+				mode_cnt++;
+			}
+			else if (c==DOWN){
+				mode_cnt--;
+			}
+			vTaskDelay(pdMS_TO_TICKS(1000));
+
+		//portEXIT_CRITICAL(&mutex);
+
+
+
+			printf("cnt: %d\n", mode_cnt);
+		mcpwm_config_t pwm_config;
+		pwm_config.frequency = 50;
+		pwm_config.cmpr_b= mode_cnt*PWM_INC;
+
+//		if (mode_cnt <= 0){
+//			pwm_config.cmpr_b= MODE1;
+//		}
+//		else if(mode_cnt == 1){
+//			pwm_config.cmpr_b= MODE2;
+//		}
+//		else if (mode_cnt == 2){
+//		    pwm_config.cmpr_b= MODE3;
+//		}
+//		else if (mode_cnt == 3){
+//			pwm_config.cmpr_b= MODE4;
+//	    }
+//	    else if (mode_cnt == 4){
+//	    	pwm_config.cmpr_b = MODE5;
+//	    }
+//	    else {
+//	    	;
+//	    }
+	    // MODES see @pwm_driver.h
+		pwm_config.counter_mode = MCPWM_UP_COUNTER;
+	    pwm_config.duty_mode = MCPWM_DUTY_MODE_0; // active HIGH
+	    mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_0, &pwm_config);   //Configure PWM0A & PWM0B with above settings
+
+		/*
+		 * NOT ENABLED
+		 */
+		#if MCPWM_EN_DEADTIME
+		    //add rising edge delay or falling edge delay
+		    mcpwm_deadtime_enable(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_ACTIVE_RED_FED_FROM_PWMXA, 656, 67);  //Enable deadtime on PWM0A and PWM0B with red = (656)*100ns & fed = (67)*100ns on PWM0A and PWM0B generated from PWM0A
+		#endif
+
+		/*
+		 * ENABLED
+		 */
+		#if MCPWM_EN_FAULT
+		    mcpwm_fault_init(MCPWM_UNIT_0, MCPWM_HIGH_LEVEL_TGR, MCPWM_SELECT_F1); //Enable FAULT, when high level occurs on FAULT1 signal
+		    mcpwm_fault_init(MCPWM_UNIT_0, MCPWM_HIGH_LEVEL_TGR, MCPWM_SELECT_F2); //Enable FAULT, when high level occurs on FAULT2 signal
+		    mcpwm_fault_set_oneshot_mode(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_SELECT_F2, MCPWM_FORCE_MCPWMXA_HIGH, MCPWM_FORCE_MCPWMXB_LOW); //Action taken on PWM0A and PWM0B, when FAULT2 occurs
+		    mcpwm_fault_set_oneshot_mode(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_SELECT_F1, MCPWM_FORCE_MCPWMXA_LOW, MCPWM_FORCE_MCPWMXB_HIGH); //Action taken on PWM0A and PWM0B, when FAULT1 occurs
+		#endif
+
+		/*
+		 * ENABLED
+		 */
+		#if MCPWM_EN_SYNC
+		    mcpwm_sync_enable(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_SELECT_SYNC0, 200);    //Load counter value with 20% of period counter of mcpwm timer 1 when sync 0 occurs
+		#endif
+
+
+
+	}
+
+	vTaskDelete(NULL);
+}
+
+void pwm_steering_task(void *arg){
+
+	vTaskDelete(NULL);
+}

@@ -1,0 +1,109 @@
+/*
+ * main.h
+ *
+ *  Created on: 26.03.2020
+ *      Author: cleme
+ */
+
+#ifndef MAIN_MAIN_H_
+#define MAIN_MAIN_H_
+
+// LIBRARIES
+#include <sys/param.h>
+#include <stdio.h>
+#include <strings.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/FreeRTOSConfig.h"
+#include "sdkconfig.h"
+#include "esp_wifi.h"
+#include "esp_system.h"
+#include "esp_event.h"
+#include "esp_err.h"
+#include "esp_log.h"
+#include "nvs_flash.h"
+#include "driver/gpio.h"
+#include "driver/spi_master.h"
+#include "pwm_driver.h"
+#include "adc_driver.h"
+#include "button_driver.h"
+#include "esp_task_wdt.h"
+#include "freertos/event_groups.h"
+#include "freertos/task.h"
+#include "freertos/queue.h"
+#include "freertos/semphr.h"
+#include "i2c_driver.h"
+#include "wifi_driver.h"
+#include "display_driver.h"
+#include "spi_driver.h"
+#include "spi_lcd_ILI9341.h"
+#include "data_ILI9341.h"
+#include "http_webserver.h"
+#include "lvgl/lvgl.h"
+#include "lvgl_driver.h"
+#include "cJSON.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+void app_main(void);
+bool driver_cfg(void);
+bool init_network(void);
+bool intertask_com(void);
+#ifdef __cplusplus
+}
+#endif
+
+// Global variables
+QueueHandle_t xQueue;
+QueueHandle_t queue_button;
+QueueHandle_t queue_to_display_dig;
+QueueHandle_t queue_to_display_adc;
+QueueHandle_t queue_to_ili9341;
+QueueHandle_t queue_http;
+
+
+// Semaphore
+SemaphoreHandle_t UpButtonSemaphore;
+SemaphoreHandle_t DownButtonSemaphore;
+SemaphoreHandle_t CountSemaphore;
+SemaphoreHandle_t GuiSemaphore;
+SemaphoreHandle_t ButtonThrottleAppSemaphore;
+SemaphoreHandle_t ButtonSteeringAppSemaphore;
+
+// task handlers
+TaskHandle_t xTaskToNotify;
+
+// SW version to display
+#define SW_VERSION "#C0C0C0 SW Version SyCtrl v1.1#"
+
+// WDT timeout
+#define TWDT_TIMEOUT_S	5
+#define TASK_STACK_SIZE 2048
+
+// DEBUG Messages enable
+#define DEBUG_PRINT_GLOBAL 0
+#define DEBUG_PRINT_BUTTON 0
+#define DEBUG_PRINT_ADC 0
+
+#define SELECTED_FONT_SIZE 28
+
+// custom display driver (deprecated)
+#define CUSTOM_ILI9341 0
+
+// enable external 128x32 display
+#define ENABLE_128x32_DISP 0
+
+// app specific
+#define LEFT_FROM_APP 11
+#define RIGHT_FROM_APP 12
+#define INIT_APP_STEERING_POS 1024
+
+// checking function for watchdog timer
+#define CHECK_ERROR_CODE(returned, expected) ({                        \
+            if(returned != expected){                                  \
+                printf("TWDT ERROR\n");                                \
+                abort();                                               \
+            }                                                          \
+})
+
+#endif /* MAIN_MAIN_H_ */

@@ -1,0 +1,52 @@
+/*
+ * pwm.h
+ *
+ *  Created on: 24.03.2020
+ *      Author: cleme
+ */
+
+#ifndef MAIN_PWM_DRIVER_H_
+#define MAIN_PWM_DRIVER_H_
+
+#include <stdio.h>
+#include "string.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/queue.h"
+#include "esp_attr.h"
+#include "soc/rtc.h"
+#include "driver/mcpwm.h"
+#include "soc/mcpwm_periph.h"
+
+#define MCPWM_EN_CARRIER 0   //Make this 1 to test carrier submodule of mcpwm, set high frequency carrier parameters
+#define MCPWM_EN_DEADTIME 0  //Make this 1 to test deadtime submodule of mcpwm, set deadtime value and deadtime mode
+#define MCPWM_EN_FAULT 0     //Make this 1 to test fault submodule of mcpwm, set action on MCPWM signal on fault occurence like overcurrent, overvoltage, etc
+#define MCPWM_EN_SYNC 0      //Make this 1 to test sync submodule of mcpwm, sync timer signals
+#define MCPWM_EN_CAPTURE 0   //Make this 1 to test capture submodule of mcpwm, measure time between rising/falling edge of captured signal
+#define MCPWM_GPIO_INIT 0    //select which function to use to initialize gpio signals
+#define CAP_SIG_NUM 3   //Three capture signals
+
+#define CAP0_INT_EN BIT(27)  //Capture 0 interrupt bit
+#define CAP1_INT_EN BIT(28)  //Capture 1 interrupt bit
+#define CAP2_INT_EN BIT(29)  //Capture 2 interrupt bit
+
+
+#define GPIO_PWM0A_OUT 19   //Set GPIO 19 as PWM0A
+#define GPIO_PWM0B_OUT 18   //Set GPIO 18 as PWM0B
+
+#define GPIO_SYNC0_IN   2   //Set GPIO 02 as SYNC0
+#define GPIO_SYNC1_IN   4   //Set GPIO 04 as SYNC1
+#define GPIO_SYNC2_IN   5   //Set GPIO 05 as SYNC2
+#define GPIO_FAULT0_IN 32   //Set GPIO 32 as FAULT0
+#define GPIO_FAULT1_IN 34   //Set GPIO 34 as FAULT1
+#define GPIO_FAULT2_IN 34   //Set GPIO 34 as FAULT2
+
+// Duty Cycles
+#define MODE1 4.25 //850ms
+#define MODE2 4.60 //920ms
+#define MODE1 7.00 //1400ms
+#define MODE2 9.00 //1800ms
+#define MODE1 11.00 //2200ms
+
+
+#endif /* MAIN_PWM_DRIVER_H_ */

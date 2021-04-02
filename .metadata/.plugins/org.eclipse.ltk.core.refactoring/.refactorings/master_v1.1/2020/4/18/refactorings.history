@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename resource &apos;master_v1.1/build/master_v1.bin&apos; to &apos;master_v1.1.bin&apos;" description="Rename resource &apos;master_v1.bin&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="build/master_v1.bin" name="master_v1.1.bin" stamp="1588168716744" updateReferences="true"/>
+</session>

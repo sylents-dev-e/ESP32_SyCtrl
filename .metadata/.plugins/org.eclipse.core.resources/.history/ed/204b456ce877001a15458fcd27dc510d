@@ -1,0 +1,90 @@
+/*
+ * pwm.c
+ *
+ *  Created on: 24.03.2020
+ *      Author: cleme
+ *
+ */
+
+#include "pwm_driver.h"
+
+static TaskHandle_t task_handles[portNUM_PROCESSORS];
+
+
+static bool pwm_gpio_init()
+{
+    printf("initializing mcpwm gpio...\n");
+
+/*
+ * setting default
+ */
+#if MCPWM_GPIO_INIT
+    mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM0A, GPIO_PWM0_THROTTLE_OUT);
+    mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM0B, GPIO_PWM0_STEERING_OUT);
+    mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM_SYNC_0, GPIO_SYNC0_IN);
+    mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM_SYNC_1, GPIO_SYNC1_IN);
+    mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM_SYNC_2, GPIO_SYNC2_IN);
+    mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM_FAULT_1, GPIO_FAULT1_IN);
+    mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM_FAULT_2, GPIO_FAULT2_IN);
+#else
+    mcpwm_pin_config_t pin_config = {
+        .mcpwm0a_out_num = GPIO_PWM0_THROTTLE_OUT,
+		.mcpwm0b_out_num = GPIO_PWM0_STEERING_OUT,
+        .mcpwm_sync0_in_num  = GPIO_SYNC0_IN,
+        .mcpwm_sync1_in_num  = GPIO_SYNC1_IN,
+        .mcpwm_sync2_in_num  = GPIO_SYNC2_IN,
+        .mcpwm_fault1_in_num = GPIO_FAULT1_IN,
+        .mcpwm_fault2_in_num = GPIO_FAULT2_IN,
+    };
+    mcpwm_set_pin(MCPWM_UNIT_0, &pin_config);
+
+
+#endif
+    gpio_pulldown_en(GPIO_SYNC0_IN);   //Enable pull down on SYNC0  signal
+    gpio_pulldown_en(GPIO_SYNC1_IN);   //Enable pull down on SYNC1  signal
+    gpio_pulldown_en(GPIO_SYNC2_IN);   //Enable pull down on SYNC2  signal
+    gpio_pulldown_en(GPIO_FAULT1_IN);  //Enable pull down on FAULT1 signal
+    gpio_pulldown_en(GPIO_FAULT2_IN);  //Enable pull down on FAULT2 signal
+
+    mcpwm_config_t init_pwm;
+    init_pwm.frequency = 50;
+    init_pwm.cmpr_b = MODE1;
+    init_pwm.counter_mode = MCPWM_UP_COUNTER;
+    init_pwm.duty_mode = MCPWM_DUTY_MODE_0; // active HIGH
+    mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_0, &init_pwm);
+
+
+    return true;
+}
+
+
+/**
+ * @brief Configure whole MCPWM module
+ */
+bool pwm_generation(void)
+{
+    //mcpwm gpio initialization
+	configASSERT(pwm_gpio_init());
+
+	// create semaphore for UP/DOWN button
+
+    for(int i = 0; i < portNUM_PROCESSORS; i++) {
+    	xTaskCreatePinnedToCore(pwm_throttle_task, "pwm_throttle_task", 2048, NULL, (tskIDLE_PRIORITY + 2), &task_handles[i],i);
+       	xTaskCreatePinnedToCore(pwm_steering_task, "pwm_steering_task", 2048, NULL, (tskIDLE_PRIORITY + 2), &task_handles[i],i);
+    }
+
+    printf("Configuring Initial Parameters of mcpwm...\n");
+
+    return true;
+}
+
+void pwm_throttle_task(void *arg){
+
+
+	vTaskDelete(NULL);
+}
+
+void pwm_steering_task(void *arg){
+
+	vTaskDelete(NULL);
+}

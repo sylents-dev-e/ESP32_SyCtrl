@@ -1,0 +1,11 @@
+# Basic PWM signal
+
+Sends out a basic pwm signal to two GPIO ports (specified in #defines)
+
+## Capture unit not implemented yet
+
+Since there are no hall sensors in out BLDC at the moment there is no need for a feedback path
+
+## Signal
+
+Frequency and Duty Cycle can be modified in the proper main .c-file

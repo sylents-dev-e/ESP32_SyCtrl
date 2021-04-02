@@ -1,0 +1,5 @@
+cmake --build . -- -v
+ninja: error: loading 'build.ninja': Das System kann die angegebene Datei nicht finden.
+
+
+Build complete (0 errors, 0 warnings): C:\Users\cleme\sylents\ESP32\mcpwm_1channel\build

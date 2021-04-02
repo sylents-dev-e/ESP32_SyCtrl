@@ -1,0 +1,88 @@
+/*
+ * main.h
+ *
+ *  Created on: 26.03.2020
+ *      Author: cleme
+ */
+
+#include "main.h"
+#include "soc/timer_group_struct.h"
+#include "soc/timer_group_reg.h"
+
+static TaskHandle_t task_handles[portNUM_PROCESSORS];
+
+
+void app_main(void)
+{
+	//esp_restart();
+	//vTaskDelay(pdMS_TO_TICKS(100));
+	// initialization
+    esp_err_t ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES)
+    {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ret = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(ret);
+
+    //Initialize or reinitialize TWDT
+    CHECK_ERROR_CODE(esp_task_wdt_init(TWDT_TIMEOUT_S, false), ESP_OK);
+
+    configASSERT(driver_cfg());
+
+
+#ifndef CONFIG_ESP_TASK_WDT_CHECK_IDLE_TASK_CPU0
+    esp_task_wdt_add(xTaskGetIdleTaskHandleForCPU(0));
+#endif
+#ifndef CONFIG_ESP_TASK_WDT_CHECK_IDLE_TASK_CPU1
+    esp_task_wdt_add(xTaskGetIdleTaskHandleForCPU(1));
+#endif
+
+//    //message queue for passing ADC data to pwm output
+//    xQueue = xQueueCreate(1, sizeof(uint32_t));
+//    // check if Queue was successfully created
+//    configASSERT(xQueue);
+
+    //message queue for digital button com
+    queue_button = xQueueCreate(1, sizeof(uint32_t));
+    // check if Queue was successfully created
+    configASSERT(queue_button);
+
+
+
+    // tast creation pinned to 2 cores
+    for(int i = 0; i < portNUM_PROCESSORS; i++)
+    {
+    	xTaskCreatePinnedToCore(adc_input, "adc_input", 2048, NULL, (tskIDLE_PRIORITY + 1), &task_handles[i],i);
+    //	xTaskCreatePinnedToCore(pwm_generation, "pwm_generation", 2048, NULL, (tskIDLE_PRIORITY + 1), &task_handles[i],i);
+
+    }
+
+
+    // BUG: Core dump when starting scheduler
+   //vTaskStartScheduler();
+
+    while(1)
+    {
+    	/* WTD timing config to avoid the following error:
+    	 * "Task watchdog got triggered. The following tasks did not reset the watchdog in time: - IDLE (CPU 0)
+    	 */
+    	TIMERG0.wdt_wprotect=TIMG_WDT_WKEY_VALUE;
+    	TIMERG0.wdt_feed=1;
+    	TIMERG0.wdt_wprotect=0;
+    }
+}
+
+bool driver_cfg (void){
+
+	configASSERT(button_config(LEFT));
+	configASSERT(button_config(RIGHT));
+	configASSERT(button_config(UP));
+	configASSERT(button_config(DOWN));
+	configASSERT(pwm_generation());
+	gpio_pad_select_gpio(2);
+	gpio_set_direction(2, GPIO_MODE_OUTPUT);
+	gpio_set_level(2, 0);
+
+	return true;
+}
