@@ -1,0 +1,6 @@
+file(GLOB private_lib ${CMAKE_CURRENT_LIST_DIR}/*.c)
+idf_component_register(SRCS ${private_lib}
+						INCLUDE_DIRS . 
+                       )
+target_compile_definitions(${COMPONENT_LIB} PRIVATE LV_CONF_INCLUDE_SIMPLE=1)
+					

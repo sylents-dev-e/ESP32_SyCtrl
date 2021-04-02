@@ -1,0 +1,68 @@
+menu "SyCtrl Configuration"
+
+    config ESP_WIFI_SSID
+        string "WiFi SSID"
+        default "SyCtrl_WiFi_Access"
+        help
+            SSID (network name) for the example to connect to.
+
+    config ESP_WIFI_PASSWORD
+        string "WiFi Password"
+        default "MyPassword"
+        help
+            WiFi password (WPA or WPA2) for the example to use.
+            
+    config ESP_WIFI_MAXSTA
+        int "Max. WiFi Station at one time"
+        default 2
+        help
+            Max. WiFi Station at one time.
+            
+    config ESP_HTTP_SERVER_PORT
+    	int "HTTP Server Port"
+    	default 3500
+    	help
+    		Insert Port for HTTP Server.
+    		
+    config ESP_HTTP_SERVER_RECEIVE_TIMEOUT
+    	int "HTTP Server Receive Timeout [s]"
+    	default 1
+    	help
+    		Receive timeout HTTP Server in seconds.    
+    		
+    config ESP_HTTP_SERVER_TRANSMIT_TIMEOUT
+    	int "HTTP Server Transmit Timeout [s]"
+    	default 1
+    	help
+    		Transmit timeout HTTP Server in seconds.
+    		
+    config ESP_ADC_MULTISAMPLING_ON_OFF
+    	bool "ADC Multisample On/Off"
+    	default 0
+    	help
+    		Multisample On/Off in ADC section. 
+
+    config ESP_NO_OF_SAMPLES
+    	int "ADC Multisample Value"
+    	default 256
+    	help
+    		Multisample Value in ADC section.    
+    		 
+    config ESP_HTTP_CONTENT_BUFFER
+    	int "Receive content buffer in http POST (bytes)"
+    	default 100
+    	help
+    		Receive content buffer in http POST.     
+
+    config ESP_ADC_APP_EMULATION_STEPS
+    	int "App ADC Emulator Steps (in bits)"
+    	default 100
+    	help
+    		App ADC Emulator Step Width (in bits).     
+    		
+    config ESP_WDT_PWM
+    	int "Enable Watchdog Timer for PWM"
+    	default 0
+    	help
+    		NOT stable yet.      			             	 	
+endmenu
